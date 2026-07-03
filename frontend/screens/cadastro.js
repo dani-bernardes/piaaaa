@@ -10,9 +10,9 @@ export default function Cadastro({navigation}) {
     const [senha, setSenha] = useState('');
 
     async function cadastrarUsuario() {
+      Alert.alert("teste");
         try {
-            const resposta = 
-            await fetch('http://172.20.90.117:3000/usuarios', {
+            const resposta = await fetch('http://172.20.90.235:3000/usuarios', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -35,68 +35,132 @@ export default function Cadastro({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 24,
     justifyContent: 'center'
   },
+
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40
+  },
+
+  logo: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: '#2563EB'
+  },
+
+  subtitulo: {
+    marginTop: 8,
+    color: '#6B7280',
+    fontSize: 15
+  },
+
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4
+  },
+
   titulo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 24
   },
+
   input: {
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 5
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    fontSize: 16
   },
+
   botao: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    marginTop: 10,
-    borderRadius: 5
+    backgroundColor: '#2563EB',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8
   },
+
   textoBotao: {
-    color: '#000',
-    textAlign: 'center'
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16
+  },
+
+  link: {
+    textAlign: 'center',
+    marginTop: 24,
+    color: '#2563EB',
+    fontWeight: '600'
   }
 });
 
 
 return (
-<View style={styles.container}>
-    <Text style={styles.titulo}>Cadastro de Usuário</Text>
-    
-    <TextInput
+  <View style={styles.container}>
+    <View style={styles.logoContainer}>
+      <Text style={styles.logo}>SenseBridge</Text>
+      <Text style={styles.subtitulo}>
+        Crie sua conta para continuar
+      </Text>
+    </View>
+
+    <View style={styles.card}>
+      <Text style={styles.titulo}>Cadastro</Text>
+
+      <TextInput
         style={styles.input}
-        placeholder="Nome"
+        placeholder="Nome completo"
         value={nome}
         onChangeText={setNome}
-    />
-    <TextInput
+      />
+
+      <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
-    />
-    <TextInput
+      />
+
+      <TextInput
         style={styles.input}
         placeholder="Senha"
         value={senha}
         onChangeText={setSenha}
         secureTextEntry
-    />
-    <TouchableOpacity style={styles.botao} onPress={cadastrarUsuario}>
-        <Text style={styles.textoBotao}>Cadastrar</Text>
+      />
+
+      <TouchableOpacity
+        style={styles.botao}
+        onPress={cadastrarUsuario}
+      >
+        <Text style={styles.textoBotao}>
+          Criar conta
+        </Text>
+      </TouchableOpacity>
+    </View>
+
+    <TouchableOpacity
+      onPress={() => navigation.goBack()}
+    >
+      <Text style={styles.link}>
+        Já tenho uma conta
+      </Text>
     </TouchableOpacity>
+  </View>
+);
 
-    <TouchableOpacity onPress={() => navigation.navigate('listaUsuarios')}>
-        <Text style={styles.textoBotao}>Ver Lista de Usuários</Text>
-    </TouchableOpacity>
-
-</View>
-
-
-)
 
 }

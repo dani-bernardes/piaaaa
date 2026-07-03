@@ -16,7 +16,7 @@ app.post('/usuarios', async (req, res) => {
     (nome, email, senha) VALUES (?, ?, ?)`;
 
     const senhaCriptografada = await bcrypt.hash(senha, 10);
-
+    console.log("teste")
     conexao.query(
         sql,
         [nome, email, senhaCriptografada],

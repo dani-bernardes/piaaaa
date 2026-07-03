@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "escolaApp",
-    "slug": "escolaApp",
+    "name": "SenseBridge",
+    "slug": "SenseBridge",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

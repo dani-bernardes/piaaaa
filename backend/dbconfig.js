@@ -3,8 +3,8 @@ const mysql = require('mysql2');
 const conexao = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: '', //pode ser vazio ''
-    database: 'escola_app'
+    password: 'root', //pode ser vazio ''
+    database: 'sensebridge'
 });
 
 conexao.connect((erro) => {

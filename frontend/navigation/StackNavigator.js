@@ -14,11 +14,11 @@ export default function StackNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
+        <Stack.Screen name="Cadastro" component={Cadastro} />
       
       <Stack.Screen name="login" 
         component={login} />
         
-        <Stack.Screen name="Cadastro" component={Cadastro} />
 
         <Stack.Screen name="listaUsuarios" 
         component={listaUsuarios} />

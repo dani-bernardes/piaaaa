@@ -10,10 +10,11 @@ app.use(express.json());
 
 
 app.post('/usuarios', async (req, res) => {
-    const {nome, email, senha} = req.body;
+    const {nome, email, senha, data_nascimento, sexo, cidade, telefone, tipo_usuario, foto_perfil} = req.body;
 
-    const sql = `INSERT INTO usuarios 
-    (nome, email, senha) VALUES (?, ?, ?)`;
+    const sql = `INSERT INTO Usuarios
+    (nome, email, senha, data_nascimento, sexo, cidade, telefone, tipo_usuario, foto_perfil)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const senhaCriptografada = await bcrypt.hash(senha, 10);
     console.log("teste")

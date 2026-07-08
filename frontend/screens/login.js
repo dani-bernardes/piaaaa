@@ -35,69 +35,102 @@ export default function login({navigation}) {
     }
 
     return (
-
         <View style={styles.container}>
-        
-            <Text style={styles.container}>Login</Text>
-
+    
+            <Text style={styles.titulo}>Entrar</Text>
+            <Text style={styles.subtitulo}>
+                Faça login para continuar
+            </Text>
+    
             <TextInput
                 style={styles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
             />
-
+    
             <TextInput
                 style={styles.input}
                 placeholder="Senha"
+                secureTextEntry
                 value={senha}
                 onChangeText={setSenha}
-                secureTextEntry={true}
             />
-
-            <TouchableOpacity style={styles.button} onPress={fazerLogin}>
-                <Text style={styles.buttonText}>Entrar</Text>
+    
+            <TouchableOpacity
+                style={styles.botao}
+                onPress={fazerLogin}
+            >
+                <Text style={styles.textoBotao}>Entrar</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Cadastro')}>
-                <Text style={styles.buttonText}>Cadastrar</Text>
-            </TouchableOpacity> 
+    
+            <TouchableOpacity
+                onPress={() => navigation.navigate('Cadastro')}
+            >
+                <Text style={styles.link}>
+                    Não tem uma conta?{" "}
+                    <Text style={styles.linkVerde}>
+                        Cadastre-se
+                    </Text>
+                </Text>
+            </TouchableOpacity>
+    
         </View>
-    )
-
+    );
 }
 const styles = StyleSheet.create({
-    container:{
+    container: {
         flex: 1,
-        justifyContent: 'center',
-        padding: 20
+        backgroundColor: "#fff",
+        justifyContent: "center",
+        paddingHorizontal: 25,
     },
 
-    titulo:{
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center'
+    titulo: {
+        fontSize: 32,
+        color: "#4B7A4B",
+        fontWeight: "600",
+        marginBottom: 10,
+    },
+
+    subtitulo: {
+        color: "#9E9E9E",
+        marginBottom: 35,
     },
 
     input: {
+        height: 50,
+        backgroundColor: "#F5F5F5",
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
-        padding: 12,
-        marginBottom: 10
-    },
-    botao:{
-        backgroundColor: '#007BFF',
-        padding: 12,
-        borderRadius: 5,   
-        marginTop: 10,
-    },
-    textoBotao:{
-        color: '#fff',
-        textAlign: 'center',
-        fontWeight: 'bold'
+        borderColor: "#D8D8D8",
+        borderRadius: 25,
+        paddingHorizontal: 18,
+        marginBottom: 15,
     },
 
-    
+    botao: {
+        backgroundColor: "#C8F7D3",
+        height: 52,
+        borderRadius: 26,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 10,
+    },
+
+    textoBotao: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#2F4F2F",
+    },
+
+    link: {
+        textAlign: "center",
+        marginTop: 25,
+        color: "#666",
+    },
+
+    linkVerde: {
+        color: "#4B7A4B",
+        fontWeight: "bold",
+    }
 });

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "SenseBridge",
-    "slug": "SenseBridge",
+    "name": "consumo_consciente",
+    "slug": "consumo_consciente",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -13,12 +13,7 @@ export default function Cadastro({ navigation }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [dataNascimento, setDataNascimento] = useState("");
-  const [sexo, setSexo] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [tipoUsuario, setTipoUsuario] = useState("");
-  const [fotoPerfil, setFotoPerfil] = useState("");
+ const [tipo_usuario, setTipoUsuario] = useState("");
 
   async function cadastrarUsuario() {
     try {
@@ -31,12 +26,7 @@ export default function Cadastro({ navigation }) {
           nome,
           email,
           senha,
-          data_nascimento: dataNascimento,
-          sexo,
-          cidade,
-          telefone,
-          tipo_usuario: tipoUsuario,
-          foto_perfil: fotoPerfil,
+          tipo_usuario,
         }),
       });
 
@@ -47,12 +37,7 @@ export default function Cadastro({ navigation }) {
       setNome("");
       setEmail("");
       setSenha("");
-      setDataNascimento("");
-      setSexo("");
-      setCidade("");
-      setTelefone("");
       setTipoUsuario("");
-      setFotoPerfil("");
     } catch (erro) {
       Alert.alert("Erro ao cadastrar usuário");
     }
@@ -93,46 +78,11 @@ export default function Cadastro({ navigation }) {
 
       <TextInput
         style={styles.input}
-        placeholder="Data de nascimento"
-        value={dataNascimento}
-        onChangeText={setDataNascimento}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Sexo (M/F/O)"
-        value={sexo}
-        onChangeText={setSexo}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Cidade"
-        value={cidade}
-        onChangeText={setCidade}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Telefone"
-        keyboardType="phone-pad"
-        value={telefone}
-        onChangeText={setTelefone}
-      />
-
-      <TextInput
-        style={styles.input}
         placeholder="Tipo de usuário"
-        value={tipoUsuario}
+        value={tipo_usuario}
         onChangeText={setTipoUsuario}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Foto de perfil (URL)"
-        value={fotoPerfil}
-        onChangeText={setFotoPerfil}
-      />
 
       <TouchableOpacity
         style={styles.botao}

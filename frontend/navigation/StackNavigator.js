@@ -17,21 +17,11 @@ export default function StackNavigator() {
 
        <Stack.Screen name="telainicial" 
         component={telainicial} />
-      
-
-     
         <Stack.Screen name="Cadastro" component={Cadastro} />
       
       <Stack.Screen name="login" 
         component={Login} />
-        
-
-       
       </Stack.Navigator>
-      
-     
-
-
     </NavigationContainer>
 
 );

@@ -13,11 +13,11 @@ export default function Cadastro({ navigation }) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
- const [tipo_usuario, setTipoUsuario] = useState("");
+  const [tipo_usuario, setTipoUsuario] = useState("");
 
   async function cadastrarUsuario() {
     try {
-      const resposta = await fetch("http://172.20.90.235:3000/usuarios", {
+      const resposta = await fetch("http://172.20.90.249:3000/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,6 +38,7 @@ export default function Cadastro({ navigation }) {
       setEmail("");
       setSenha("");
       setTipoUsuario("");
+      
     } catch (erro) {
       Alert.alert("Erro ao cadastrar usuário");
     }

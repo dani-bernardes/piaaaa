@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {View, Text, TextInput, TouchableOpacity,
     StyleSheet, Alert} from 'react-native';
 
-export default function login({navigation}) {
+export default function Login({navigation}) {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
 
@@ -73,8 +73,7 @@ export default function login({navigation}) {
                         Cadastre-se
                     </Text>
                 </Text>
-            </TouchableOpacity>
-    
+            </TouchableOpacity> 
         </View>
     );
 }

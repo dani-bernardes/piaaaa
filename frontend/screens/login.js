@@ -58,11 +58,13 @@ export default function Login({navigation}) {
             />
     
             <TouchableOpacity
-                style={styles.botao}
-                onPress={fazerLogin}
+              style={styles.botaoBranco}
+              onPress={() => navigation.navigate('home')}
             >
-                <Text style={styles.textoBotao}>Entrar</Text>
+              <Text style={styles.textoBotaoBranco}>Entrar</Text>
             </TouchableOpacity>
+                </View>
+              );
     
             <TouchableOpacity
                 onPress={() => navigation.navigate('Cadastro')}
@@ -74,8 +76,8 @@ export default function Login({navigation}) {
                     </Text>
                 </Text>
             </TouchableOpacity> 
-        </View>
-    );
+    
+
 }
 const styles = StyleSheet.create({
     container: {

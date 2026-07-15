@@ -7,6 +7,7 @@ import {createNativeStackNavigator } from '@react-navigation/native-stack';
 import Cadastro from '../screens/cadastro';
 import telainicial from '../screens/telainicial';
 import Login from '../screens/login';
+import Home from '../screens/home';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,8 +22,16 @@ export default function StackNavigator() {
       
       <Stack.Screen name="login" 
         component={Login} />
-      </Stack.Navigator>
+     
+       <Stack.Screen
+    name="home"
+    component={Home}
+/>
+     </Stack.Navigator>
+
     </NavigationContainer>
+
+
 
 );
 }

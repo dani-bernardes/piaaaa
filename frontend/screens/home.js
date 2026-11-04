@@ -12,7 +12,8 @@ import {
 
 import { Ionicons, Feather } from '@expo/vector-icons';
 
-export default function Home({ navigation }) {
+export default function Home({ navigation, route }) {
+  const usuario = route.params?.usuario;
 
   const [pesquisa, setPesquisa] = useState("");
 
@@ -125,8 +126,8 @@ export default function Home({ navigation }) {
         <View>
 
           <Text style={styles.ola}>
-            Olá,{$nome}
-          </Text>
+               Olá, {usuario?.nome || 'usuário'}
+                   </Text>
 
           <Text style={styles.subtitulo}>
             Encontre sua próxima peça 💜
@@ -249,13 +250,22 @@ export default function Home({ navigation }) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity>
-          <Ionicons
-            name="add-circle"
-            size={45}
-            color="#6C4AB6"
-          />
-        </TouchableOpacity>
+       
+<TouchableOpacity
+  onPress={() => {
+    navigation.navigate("AdicionarRoupas", {
+      usuario: usuario
+    });
+  }}
+  style={{ padding: 10 }}
+>
+  <Ionicons
+    name="add-circle"
+    size={45}
+    color="#6C4AB6"
+  />
+</TouchableOpacity>
+
 
         <TouchableOpacity>
           <Ionicons

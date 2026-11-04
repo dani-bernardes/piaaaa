@@ -5,9 +5,15 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 export default function HomeScreen({ navigation })  {
   return (
+    <ScrollView
+    style={{flex:1}}
+    contentContainerStyle={{flexGrow:1, padding: 16}}
+    showsVerticalScrollIndicator={true}
+    >
     <View style={styles.container}>
       <Image
         source={require("../assets/logob.jpeg")}
@@ -58,6 +64,7 @@ export default function HomeScreen({ navigation })  {
   <Text style={styles.textoBotaoBranco}>Já tenho uma conta</Text>
 </TouchableOpacity>
     </View>
+    </ScrollView>
   );
 }
 

@@ -1,21 +1,29 @@
-import {useState} from 'react';
 
-import {View, Text, TextInput, TouchableOpacity,
-    StyleSheet, Alert} from 'react-native';
+import { useState } from 'react';
 
-export default function Login({navigation}) {
+import {
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    Alert
+} from 'react-native';
+
+export default function Login({ navigation }) {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
 
-    async function fazerLogin(){
-        try{
-            const resposta = await fetch('http://172.20.90.249:3000/login', {
+    async function fazerLogin() {
+        try {
+            const resposta = await fetch('http://172.20.90.160:3000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    email, senha
+                    email,
+                    senha
                 })
             });
 
@@ -23,12 +31,17 @@ export default function Login({navigation}) {
 
             console.log(dados);
 
-            if(dados.sucesso){
+            if (dados.sucesso) {
                 Alert.alert('Sucesso', 'Login realizado com sucesso');
-                //navigation.navigate('Home');
+
+                navigation.navigate('Home', {
+                    usuario: dados.data
+                });
+            } else {
+                Alert.alert('Erro', dados.mensagem || 'Email ou senha incorretos');
             }
 
-        }catch(error){
+        } catch (error) {
             Alert.alert('Erro', 'Falha ao fazer login');
             console.log(error);
         }
@@ -36,19 +49,20 @@ export default function Login({navigation}) {
 
     return (
         <View style={styles.container}>
-    
+
             <Text style={styles.titulo}>Entrar</Text>
+
             <Text style={styles.subtitulo}>
                 Faça login para continuar
             </Text>
-    
+
             <TextInput
                 style={styles.input}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
             />
-    
+
             <TextInput
                 style={styles.input}
                 placeholder="Senha"
@@ -56,29 +70,31 @@ export default function Login({navigation}) {
                 value={senha}
                 onChangeText={setSenha}
             />
-    
+
             <TouchableOpacity
-              style={styles.botaoBranco}
-              onPress={() => navigation.navigate('home')}
+                style={styles.botao}
+                onPress={fazerLogin}
             >
-              <Text style={styles.textoBotaoBranco}>Entrar</Text>
+                <Text style={styles.textoBotao}>
+                    Entrar
+                </Text>
             </TouchableOpacity>
-                </View>
-              );
-    
+
             <TouchableOpacity
                 onPress={() => navigation.navigate('Cadastro')}
             >
                 <Text style={styles.link}>
-                    Não tem uma conta?{" "}
+                    Não tem uma conta?{' '}
                     <Text style={styles.linkVerde}>
                         Cadastre-se
                     </Text>
                 </Text>
-            </TouchableOpacity> 
-    
+            </TouchableOpacity>
 
+        </View>
+    );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

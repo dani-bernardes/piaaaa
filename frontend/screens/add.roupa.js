@@ -1,443 +1,276 @@
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Image,
-} from 'react-native';
+  View, Text, TextInput, TouchableOpacity, Image,
+  ScrollView, StyleSheet, Alert, Platform, ActivityIndicator,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
 
-import * as ImagePicker from 'expo-image-picker';
+
+const TIPOS = [
+  { valor: "troca", label: "Troca" },
+  { valor: "venda", label: "Venda" },
+  { valor: "doacao", label: "Doação" },
+];
+const CONDICOES = [
+  { valor: "novo", label: "Novo" },
+  { valor: "pouco usado", label: "Pouco usado" },
+  { valor: "usado", label: "Usado" },
+];
+const CATEGORIAS = ["Camisa", "Blusa", "Calça", "Vestido", "Saia", "Casaco", "Sapato", "Acessório", "Outro"];
+const TAMANHOS = ["PP", "P", "M", "G", "GG", "Único"];
+
+// Alert.alert não aparece no navegador, então usamos window.alert na web
+function aviso(titulo, mensagem) {
+  if (Platform.OS === "web") {
+    window.alert(`${titulo}: ${mensagem}`);
+  } else {
+    Alert.alert(titulo, mensagem);
+  }
+}
+
+function Chip({ label, ativo, onPress }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.chip, ativo && styles.chipAtivo]}
+    >
+      <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function AdicionarRoupas({ navigation, route }) {
   const usuario = route.params?.usuario;
 
-  const [tipoOferta, setTipoOferta] = useState('venda');
-  const [titulo, setTitulo] = useState('');
-  const [categoria, setCategoria] = useState('');
-  const [cor, setCor] = useState('');
-  const [tamanho, setTamanho] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [preco, setPreco] = useState('');
   const [fotos, setFotos] = useState([]);
+  const [titulo, setTitulo] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [tamanho, setTamanho] = useState("");
+  const [cor, setCor] = useState("");
+  const [material, setMaterial] = useState("");
+  const [condicao, setCondicao] = useState("");
+  const [tipoOferta, setTipoOferta] = useState("");
+  const [preco, setPreco] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  async function selecionarFotos() {
+  async function escolherFotos() {
     if (fotos.length >= 5) {
-      Alert.alert('Limite atingido', 'Você pode adicionar até 5 fotos.');
-      return;
-    }
-
-    const permissao =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissao.granted) {
-      Alert.alert(
-        'Permissão necessária',
-        'Permita o acesso à galeria para escolher as fotos.'
-      );
+      aviso("Limite", "Você pode adicionar até 5 fotos.");
       return;
     }
 
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"], // em SDK antigo: ImagePicker.MediaTypeOptions.Images
       allowsMultipleSelection: true,
       selectionLimit: 5 - fotos.length,
-      quality: 0.8,
+      quality: 0.7,
     });
 
     if (!resultado.canceled) {
-      setFotos((atuais) => [
-        ...atuais,
-        ...resultado.assets.filter(
-          (nova) => !atuais.some((foto) => foto.uri === nova.uri)
-        ),
-      ].slice(0, 5));
+      setFotos([...fotos, ...resultado.assets].slice(0, 5));
     }
   }
 
-  function removerFoto(uri) {
-    setFotos((atuais) => atuais.filter((foto) => foto.uri !== uri));
+  function removerFoto(index) {
+    setFotos(fotos.filter((_, i) => i !== index));
   }
 
-  async function publicar() {
-    if (!titulo.trim() || !categoria.trim()) {
-      Alert.alert(
-        'Campos obrigatórios',
-        'Preencha o nome e a categoria da roupa.'
-      );
-      return;
-    }
-
-    if (tipoOferta === 'venda' && !preco.trim()) {
-      Alert.alert(
-        'Preço obrigatório',
-        'Informe o preço para vender a roupa.'
-      );
-      return;
-    }
-
+  async function salvar() {
     if (!usuario?.id_usuario) {
-      Alert.alert(
-        'Erro',
-        'Não foi possível identificar o usuário logado.'
-      );
+      aviso("Erro", "Usuário não identificado. Faça login novamente.");
       return;
     }
+    if (!titulo.trim() || !categoria || !tipoOferta) {
+      aviso("Atenção", "Preencha título, categoria e tipo (troca/venda/doação).");
+      return;
+    }
+    if (tipoOferta === "venda" && !preco.trim()) {
+      aviso("Atenção", "Informe o preço da venda.");
+      return;
+    }
+
+    setEnviando(true);
 
     try {
-      const formulario = new FormData();
-
-      formulario.append('id_usuario', String(usuario.id_usuario));
-      formulario.append('titulo', titulo);
-      formulario.append('categoria', categoria);
-      formulario.append('cor', cor);
-      formulario.append('tamanho', tamanho);
-      formulario.append('descricao', descricao);
-      formulario.append('tipo_oferta', tipoOferta);
-
-      if (tipoOferta === 'venda') {
-        const valor = preco.replace(',', '.');
-        formulario.append('preco', valor);
+      const formData = new FormData();
+      formData.append("id_usuario", String(usuario.id_usuario));
+      formData.append("titulo", titulo.trim());
+      formData.append("descricao", descricao);
+      formData.append("categoria", categoria);
+      formData.append("tamanho", tamanho);
+      formData.append("cor", cor);
+      formData.append("material", material);
+      formData.append("condicao", condicao);
+      formData.append("tipo_oferta", tipoOferta);
+      if (tipoOferta === "venda") {
+        formData.append("preco", preco.replace(",", "."));
       }
 
-      fotos.forEach((foto, index) => {
-        formulario.append('fotos', {
-          uri: foto.uri,
-          name: `foto_${index}.jpg`,
-          type: 'image/jpeg',
-        });
-      });
+      for (let i = 0; i < fotos.length; i++) {
+        const foto = fotos[i];
+        const nome = `foto${i}.jpg`;
 
-      const resposta = await fetch(
-        'http://172.20.90.160:3000/roupas',
-        {
-          method: 'POST',
-          body: formulario,
+        if (Platform.OS === "web") {
+          // na web é preciso converter a uri em Blob
+          const blob = await (await fetch(foto.uri)).blob();
+          formData.append("fotos", blob, nome);
+        } else {
+          formData.append("fotos", {
+            uri: foto.uri,
+            name: nome,
+            type: foto.mimeType || "image/jpeg",
+          });
         }
-      );
+      }
+
+      // IMPORTANTE: não defina Content-Type, o fetch coloca sozinho com o boundary
+      const resposta = await fetch("http://localhost:3000/roupas", {
+        method: "POST",
+        body: formData,
+      });
 
       const dados = await resposta.json();
 
-      if (resposta.ok) {
-        Alert.alert(
-          'Sucesso!',
-          'Roupa cadastrada com sucesso!',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
+      if (resposta.ok && dados.sucesso) {
+        aviso("Sucesso", dados.mensagem);
+        navigation.goBack(); // a Home recarrega a lista ao voltar
       } else {
-        Alert.alert(
-          'Erro',
-          dados.mensagem || 'Não foi possível cadastrar a roupa.'
-        );
+        aviso("Erro", dados.mensagem || "Não foi possível cadastrar.");
       }
-
-    } catch (error) {
-      console.log('Erro ao publicar roupa:', error);
-
-      Alert.alert(
-        'Erro',
-        'Não foi possível conectar ao servidor.'
-      );
+    } catch (erro) {
+      console.log(erro);
+      aviso("Erro", "Não foi possível conectar ao servidor.");
+    } finally {
+      setEnviando(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.conteudo}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.voltar}
-        >
-          <Text style={styles.voltarTexto}>‹</Text>
-          <Text style={styles.tituloTela}>Adicionar item</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.topo}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={26} color="#6C4AB6" />
         </TouchableOpacity>
+        <Text style={styles.titulo}>Adicionar roupa</Text>
+        <View style={{ width: 26 }} />
+      </View>
 
-        <View style={styles.opcoes}>
-          {[
-            { valor: 'venda', texto: 'Vender' },
-            { valor: 'troca', texto: 'Trocar' },
-            { valor: 'doacao', texto: 'Doar' },
-          ].map((opcao) => (
-            <TouchableOpacity
-              key={opcao.valor}
-              style={[
-                styles.opcao,
-                tipoOferta === opcao.valor && styles.opcaoAtiva,
-              ]}
-              onPress={() => setTipoOferta(opcao.valor)}
-            >
-              <Text
-                style={[
-                  styles.textoOpcao,
-                  tipoOferta === opcao.valor && styles.textoOpcaoAtiva,
-                ]}
-              >
-                {opcao.texto}
-              </Text>
+      <Text style={styles.label}>Fotos ({fotos.length}/5)</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
+        {fotos.map((foto, i) => (
+          <View key={i} style={styles.fotoBox}>
+            <Image source={{ uri: foto.uri }} style={styles.foto} />
+            <TouchableOpacity style={styles.remover} onPress={() => removerFoto(i)}>
+              <Ionicons name="close" size={16} color="#FFF" />
             </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.secao}>Fotos do item</Text>
-
-        <Text style={styles.ajuda}>
-          Adicione até 5 fotos da roupa ({fotos.length}/5).
-        </Text>
-
-        <View style={styles.areaFotos}>
-          <View style={styles.listaFotos}>
-            {fotos.map((foto) => (
-              <View key={foto.uri} style={styles.fotoContainer}>
-                <Image
-                  source={{ uri: foto.uri }}
-                  style={styles.miniatura}
-                />
-
-                <TouchableOpacity
-                  style={styles.removerFoto}
-                  onPress={() => removerFoto(foto.uri)}
-                >
-                  <Text style={styles.textoRemover}>×</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-
-            {fotos.length < 5 && (
-              <TouchableOpacity
-                style={styles.botaoFoto}
-                onPress={selecionarFotos}
-              >
-                <Text style={styles.mais}>+</Text>
-                <Text style={styles.textoBotaoFoto}>
-                  Adicionar foto
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
-        </View>
+        ))}
+        {fotos.length < 5 && (
+          <TouchableOpacity style={styles.addFoto} onPress={escolherFotos}>
+            <Ionicons name="camera-outline" size={30} color="#6C4AB6" />
+            <Text style={{ color: "#6C4AB6", fontSize: 12 }}>Adicionar</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
 
-        <Text style={styles.secao}>Informações do item</Text>
+      <Text style={styles.label}>Título *</Text>
+      <TextInput style={styles.input} placeholder="Ex: Calça jeans" value={titulo} onChangeText={setTitulo} />
 
-        <TextInput
-          style={styles.campo}
-          placeholder="Nome da peça"
-          value={titulo}
-          onChangeText={setTitulo}
-        />
+      <Text style={styles.label}>Descrição</Text>
+      <TextInput
+        style={[styles.input, { height: 90, paddingTop: 12, textAlignVertical: "top" }]}
+        placeholder="Conte detalhes da peça"
+        value={descricao}
+        onChangeText={setDescricao}
+        multiline
+      />
 
-        <TextInput
-          style={styles.campo}
-          placeholder="Categoria (ex.: blusa, calça)"
-          value={categoria}
-          onChangeText={setCategoria}
-        />
+      <Text style={styles.label}>Tipo *</Text>
+      <View style={styles.linha}>
+        {TIPOS.map((t) => (
+          <Chip key={t.valor} label={t.label} ativo={tipoOferta === t.valor} onPress={() => setTipoOferta(t.valor)} />
+        ))}
+      </View>
 
-        <View style={styles.linha}>
+      {tipoOferta === "venda" && (
+        <>
+          <Text style={styles.label}>Preço (R$) *</Text>
           <TextInput
-            style={[styles.campo, styles.metade]}
-            placeholder="Cor"
-            value={cor}
-            onChangeText={setCor}
-          />
-
-          <TextInput
-            style={[styles.campo, styles.metade]}
-            placeholder="Tamanho"
-            value={tamanho}
-            onChangeText={setTamanho}
-          />
-        </View>
-
-        <TextInput
-          style={[styles.campo, styles.descricao]}
-          placeholder="Descrição da peça"
-          value={descricao}
-          onChangeText={setDescricao}
-          multiline
-        />
-
-        {tipoOferta === 'venda' && (
-          <TextInput
-            style={[styles.campo, styles.preco]}
-            placeholder="Preço (R$)"
+            style={styles.input}
+            placeholder="45,00"
+            keyboardType="decimal-pad"
             value={preco}
             onChangeText={setPreco}
-            keyboardType="decimal-pad"
           />
-        )}
+        </>
+      )}
 
-        <TouchableOpacity
-          style={styles.publicar}
-          onPress={publicar}
-        >
-          <Text style={styles.textoPublicar}>Publicar</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+      <Text style={styles.label}>Categoria *</Text>
+      <View style={styles.linha}>
+        {CATEGORIAS.map((c) => (
+          <Chip key={c} label={c} ativo={categoria === c} onPress={() => setCategoria(c)} />
+        ))}
+      </View>
+
+      <Text style={styles.label}>Tamanho</Text>
+      <View style={styles.linha}>
+        {TAMANHOS.map((t) => (
+          <Chip key={t} label={t} ativo={tamanho === t} onPress={() => setTamanho(t)} />
+        ))}
+      </View>
+
+      <Text style={styles.label}>Condição</Text>
+      <View style={styles.linha}>
+        {CONDICOES.map((c) => (
+          <Chip key={c.valor} label={c.label} ativo={condicao === c.valor} onPress={() => setCondicao(c.valor)} />
+        ))}
+      </View>
+
+      <Text style={styles.label}>Cor</Text>
+      <TextInput style={styles.input} placeholder="Ex: Azul" value={cor} onChangeText={setCor} />
+
+      <Text style={styles.label}>Material</Text>
+      <TextInput style={styles.input} placeholder="Ex: Algodão" value={material} onChangeText={setMaterial} />
+
+      <TouchableOpacity style={[styles.botao, enviando && { opacity: 0.6 }]} onPress={salvar} disabled={enviando}>
+        {enviando ? <ActivityIndicator color="#FFF" /> : <Text style={styles.botaoTexto}>Publicar</Text>}
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  container: { backgroundColor: "#F8F8F8", padding: 20, paddingTop: 50, paddingBottom: 50 },
+  topo: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  titulo: { fontSize: 22, fontWeight: "bold", color: "#6C4AB6" },
+  label: { fontWeight: "600", color: "#333", marginBottom: 6, marginTop: 6 },
+  input: {
+    height: 50, backgroundColor: "#FFF", borderRadius: 14, paddingHorizontal: 15,
+    borderWidth: 1, borderColor: "#E3DAF7", marginBottom: 10,
   },
-  conteudo: {
-    paddingHorizontal: 16,
-    paddingTop: 45,
-    paddingBottom: 30,
+  linha: { flexDirection: "row", flexWrap: "wrap", marginBottom: 10 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: "#FFF",
+    borderWidth: 1, borderColor: "#C9B5F5", marginRight: 8, marginBottom: 8,
   },
-  voltar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 22,
+  chipAtivo: { backgroundColor: "#6C4AB6", borderColor: "#6C4AB6" },
+  chipTexto: { color: "#6C4AB6" },
+  chipTextoAtivo: { color: "#FFF", fontWeight: "bold" },
+  fotoBox: { marginRight: 10 },
+  foto: { width: 100, height: 120, borderRadius: 12 },
+  remover: {
+    position: "absolute", top: 5, right: 5, width: 24, height: 24, borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,.55)", justifyContent: "center", alignItems: "center",
   },
-  voltarTexto: {
-    fontSize: 32,
-    color: '#8B6CE0',
-    marginRight: 16,
+  addFoto: {
+    width: 100, height: 120, borderRadius: 12, borderWidth: 2, borderStyle: "dashed",
+    borderColor: "#C9B5F5", justifyContent: "center", alignItems: "center", backgroundColor: "#FFF",
   },
-  tituloTela: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#8B6CE0',
+  botao: {
+    backgroundColor: "#6C4AB6", height: 55, borderRadius: 28,
+    justifyContent: "center", alignItems: "center", marginTop: 20,
   },
-  opcoes: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  opcao: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: '#E9DFF8',
-    marginRight: 3,
-    borderRadius: 9,
-  },
-  opcaoAtiva: {
-    backgroundColor: '#8B6CE0',
-  },
-  textoOpcao: {
-    color: '#553B83',
-    fontWeight: '500',
-  },
-  textoOpcaoAtiva: {
-    color: '#FFFFFF',
-  },
-  secao: {
-    fontSize: 16,
-    color: '#176B2C',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  ajuda: {
-    fontSize: 11,
-    color: '#999999',
-    marginBottom: 10,
-  },
-  areaFotos: {
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 22,
-  },
-  listaFotos: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    alignItems: 'center',
-  },
-  fotoContainer: {
-    position: 'relative',
-  },
-  miniatura: {
-    width: 85,
-    height: 85,
-    borderRadius: 10,
-  },
-  removerFoto: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#8B6CE0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textoRemover: {
-    color: '#FFFFFF',
-    fontSize: 19,
-    lineHeight: 22,
-  },
-  botaoFoto: {
-    width: 100,
-    height: 85,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#8B6CE0',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 5,
-  },
-  mais: {
-    fontSize: 28,
-    color: '#8B6CE0',
-  },
-  textoBotaoFoto: {
-    fontSize: 11,
-    color: '#8B6CE0',
-    textAlign: 'center',
-  },
-  campo: {
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 13,
-    fontSize: 14,
-    marginBottom: 10,
-    color: '#222222',
-  },
-  linha: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  metade: {
-    flex: 1,
-  },
-  descricao: {
-    minHeight: 85,
-    textAlignVertical: 'top',
-  },
-  preco: {
-    width: 145,
-  },
-  publicar: {
-    backgroundColor: '#8B6CE0',
-    borderRadius: 13,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  textoPublicar: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  botaoTexto: { color: "#FFF", fontWeight: "bold", fontSize: 17 },
 });

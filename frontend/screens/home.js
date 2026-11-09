@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,52 @@ import {
 
 import { Ionicons, Feather } from '@expo/vector-icons';
 
+
 export default function Home({ navigation, route }) {
   const usuario = route.params?.usuario;
 
   const [pesquisa, setPesquisa] = useState("");
+  const [roupasBanco, setRoupasBanco] = useState([]);
 
-  const roupas = [
+  // busca as roupas cadastradas no banco
+  async function carregarRoupas() {
+    try {
+      const resposta = await fetch("http://localhost:3000/roupas");
+      const dados = await resposta.json();
+
+      if (Array.isArray(dados)) {
+        const lista = dados.map((r) => ({
+          id: "db-" + r.id_roupa,
+          nome: r.titulo,
+          tipo:
+            r.tipo_oferta === "venda"
+              ? "Venda"
+              : r.tipo_oferta === "troca"
+              ? "Troca"
+              : "Doação",
+          preco:
+            r.tipo_oferta === "venda" && r.preco != null
+              ? "R$ " + Number(r.preco).toFixed(2).replace(".", ",")
+              : "",
+          imagem: r.foto ? { uri: `http://localhost:3000/uploads/${r.foto}` } : null,
+        }));
+
+        setRoupasBanco(lista);
+      }
+    } catch (erro) {
+      console.log("Erro ao carregar roupas:", erro);
+    }
+  }
+
+  // carrega ao abrir e sempre que voltar para a Home
+  useEffect(() => {
+    carregarRoupas();
+
+    const unsubscribe = navigation.addListener("focus", carregarRoupas);
+    return unsubscribe;
+  }, [navigation]);
+
+  const roupasFixas = [
 
     {
       id: 1,
@@ -69,16 +109,30 @@ export default function Home({ navigation, route }) {
 
   ];
 
+  // as roupas do banco aparecem primeiro
+  const roupas = [...roupasBanco, ...roupasFixas];
+
   function Card({ item }) {
 
     return (
 
       <TouchableOpacity style={styles.card}>
 
-        <Image
-          source={item.imagem}
-          style={styles.imagem}
-        />
+        {item.imagem ? (
+          <Image
+            source={item.imagem}
+            style={styles.imagem}
+          />
+        ) : (
+          <View
+            style={[
+              styles.imagem,
+              { backgroundColor: "#EEE", justifyContent: "center", alignItems: "center" },
+            ]}
+          >
+            <Ionicons name="shirt-outline" size={40} color="#BBB" />
+          </View>
+        )}
 
         <TouchableOpacity style={styles.favorite}>
 
@@ -250,7 +304,7 @@ export default function Home({ navigation, route }) {
           />
         </TouchableOpacity>
 
-       
+
 <TouchableOpacity
   onPress={() => {
     navigation.navigate("AdicionarRoupas", {

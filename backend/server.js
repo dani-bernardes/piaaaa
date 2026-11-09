@@ -116,33 +116,26 @@ app.post('/login', (req, res) => {
 
 app.post('/roupas', upload.array('fotos', 5), (req, res) => {
     const {
-        id_usuario,
-        titulo,
-        descricao,
-        categoria,
-        tamanho,
-        cor,
-        preco,
-        tipo_oferta
+        id_usuario, titulo, descricao, categoria, tamanho,
+        cor, material, condicao, preco, tipo_oferta
     } = req.body;
 
     if (!id_usuario || !titulo || !categoria || !tipo_oferta) {
-        return res.status(400).json({
-            mensagem: 'Preencha os campos obrigatórios.'
-        });
+        return res.status(400).json({ mensagem: 'Preencha os campos obrigatórios.' });
+    }
+
+    if (tipo_oferta === 'venda' && (!preco || isNaN(Number(preco)))) {
+        return res.status(400).json({ mensagem: 'Informe um preço válido para venda.' });
     }
 
     const fotos = req.files || [];
-
-    const primeiraFoto = fotos.length > 0
-        ? fotos[0].filename
-        : null;
+    const primeiraFoto = fotos.length > 0 ? fotos[0].filename : null;
 
     const sql = `
         INSERT INTO Roupas
-        (id_usuario, titulo, descricao, categoria, tamanho, cor,
-        preco, tipo_oferta, foto, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id_usuario, titulo, descricao, categoria, tamanho, cor, material,
+         condicao, preco, tipo_oferta, foto, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'disponivel')
     `;
 
     conexao.query(
@@ -154,33 +147,25 @@ app.post('/roupas', upload.array('fotos', 5), (req, res) => {
             categoria,
             tamanho || null,
             cor || null,
-            tipo_oferta === 'venda' ? preco : null,
+            material || null,
+            condicao || null,
+            tipo_oferta === 'venda' ? Number(preco) : null,
             tipo_oferta,
-            primeiraFoto,
-            'disponivel'
+            primeiraFoto
         ],
         (erro, resultado) => {
             if (erro) {
                 console.log(erro);
-                return res.status(500).json({
-                    mensagem: 'Erro ao cadastrar roupa.'
-                });
+                return res.status(500).json({ mensagem: 'Erro ao cadastrar roupa.' });
             }
 
             const id_roupa = resultado.insertId;
 
             if (fotos.length === 0) {
-                return res.json({
-                    sucesso: true,
-                    mensagem: 'Roupa cadastrada com sucesso!',
-                    id_roupa
-                });
+                return res.json({ sucesso: true, mensagem: 'Roupa cadastrada com sucesso!', id_roupa });
             }
 
-            const valores = fotos.map((foto) => [
-                id_roupa,
-                foto.filename
-            ]);
+            const valores = fotos.map((f) => [id_roupa, f.filename]);
 
             conexao.query(
                 'INSERT INTO Fotos_Roupas (id_roupa, caminho_foto) VALUES ?',
@@ -192,19 +177,37 @@ app.post('/roupas', upload.array('fotos', 5), (req, res) => {
                             mensagem: 'Roupa cadastrada, mas houve erro ao salvar as fotos.'
                         });
                     }
-
-                    res.json({
-                        sucesso: true,
-                        mensagem: 'Roupa e fotos cadastradas com sucesso!',
-                        id_roupa
-                    });
+                    res.json({ sucesso: true, mensagem: 'Roupa cadastrada com sucesso!', id_roupa });
                 }
             );
         }
     );
 });
 
+app.get('/roupas', (req, res) => {
+    const sql = `
+        SELECT r.id_roupa, r.titulo, r.descricao, r.categoria, r.tamanho, r.cor,
+               r.material, r.condicao, r.preco, r.tipo_oferta, r.foto,
+               r.data_postagem, u.nome AS nome_usuario
+        FROM Roupas r
+        JOIN Usuarios u ON u.id_usuario = r.id_usuario
+        WHERE r.status = 'disponivel'
+        ORDER BY r.data_postagem DESC
+    `;
 
+    conexao.query(sql, (erro, resultado) => {
+        if (erro) {
+            console.log(erro);
+            return res.status(500).json({ mensagem: 'Erro ao buscar roupas.' });
+        }
+        res.json(resultado);
+    });
+});
+
+app.use((erro, req, res, next) => {
+    console.log(erro);
+    res.status(400).json({ mensagem: erro.message || 'Erro no envio.' });
+});
 
 
 app.listen(3000, () => {

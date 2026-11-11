@@ -16,7 +16,7 @@ export default function Login({ navigation }) {
 
     async function fazerLogin() {
         try {
-            const resposta = await fetch('http://172.20.90.189:3000/login', {
+            const resposta = await fetch('http://172.20.91.0:3000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

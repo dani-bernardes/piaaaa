@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   View,
@@ -14,10 +15,16 @@ export default function Cadastro({ navigation }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipo_usuario, setTipoUsuario] = useState("");
+  const [mostrarOpcoes, setMostrarOpcoes] = useState(false);
 
   async function cadastrarUsuario() {
+    if (!nome || !email || !senha || !tipo_usuario) {
+      Alert.alert("Atenção", "Preencha todos os campos.");
+      return;
+    }
+
     try {
-      const resposta = await fetch("http://172.20.90.189:3000/usuarios", {
+      const resposta = await fetch("http://172.20.91.0:3000/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,15 +39,21 @@ export default function Cadastro({ navigation }) {
 
       const dados = await resposta.json();
 
-      Alert.alert(dados.mensagem);
+      Alert.alert(
+        resposta.ok ? "Sucesso" : "Erro",
+        dados.mensagem || "Não foi possível realizar o cadastro."
+      );
 
-      setNome("");
-      setEmail("");
-      setSenha("");
-      setTipoUsuario("");
-      
+      if (resposta.ok) {
+        setNome("");
+        setEmail("");
+        setSenha("");
+        setTipoUsuario("");
+        setMostrarOpcoes(false);
+      }
+
     } catch (erro) {
-      Alert.alert("Erro ao cadastrar usuário");
+      Alert.alert("Erro", "Não foi possível conectar ao servidor.");
     }
   }
 
@@ -50,6 +63,7 @@ export default function Cadastro({ navigation }) {
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.titulo}>Criar conta</Text>
+
       <Text style={styles.subtitulo}>
         Junte-se à comunidade Rewear-it
       </Text>
@@ -65,6 +79,7 @@ export default function Cadastro({ navigation }) {
         style={styles.input}
         placeholder="Email"
         keyboardType="email-address"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
@@ -77,13 +92,46 @@ export default function Cadastro({ navigation }) {
         onChangeText={setSenha}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Tipo de usuário"
-        value={tipo_usuario}
-        onChangeText={setTipoUsuario}
-      />
+      {/* SELETOR DE TIPO DE USUÁRIO */}
 
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => setMostrarOpcoes(!mostrarOpcoes)}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.textoTipo}>
+          {tipo_usuario
+            ? tipo_usuario === "consumidor"
+              ? "Consumidor"
+              : tipo_usuario === "brecho"
+              ? "Brechó"
+              : "Ateliê"
+            : "Selecione o tipo de usuário"}
+        </Text>
+      </TouchableOpacity>
+
+      {mostrarOpcoes && (
+        <View style={styles.opcoesContainer}>
+          {[
+            { label: "Consumidor", value: "consumidor" },
+            { label: "Brechó", value: "brecho" },
+            { label: "Ateliê", value: "atelie" },
+          ].map((opcao) => (
+            <TouchableOpacity
+              key={opcao.value}
+              style={styles.opcao}
+              onPress={() => {
+                setTipoUsuario(opcao.value);
+                setMostrarOpcoes(false);
+              }}
+            >
+              <Text style={styles.textoOpcao}>
+                {opcao.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.botao}
@@ -94,7 +142,8 @@ export default function Cadastro({ navigation }) {
 
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <Text style={styles.link}>
-          Já possui uma conta? <Text style={styles.linkVerde}>Entre</Text>
+          Já possui uma conta?{" "}
+          <Text style={styles.linkVerde}>Entre</Text>
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -130,6 +179,33 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#E7C6F3",
+    justifyContent: "center",
+  },
+
+  textoTipo: {
+    color: "#888",
+    fontSize: 14,
+  },
+
+  opcoesContainer: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E7C6F3",
+    marginBottom: 15,
+    overflow: "hidden",
+  },
+
+  opcao: {
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E7C6F3",
+  },
+
+  textoOpcao: {
+    color: "#555",
+    fontSize: 14,
   },
 
   botao: {

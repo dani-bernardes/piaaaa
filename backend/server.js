@@ -86,33 +86,72 @@ app.get('/usuarios', (req, res) => {
 });
 
 
-app.post('/login', (req, res) => {
-    const {email, senha} = req.body;
 
-    const query = `SELECT * FROM usuarios WHERE email = ?`;
-    
+app.post('/login', (req, res) => {
+    const { email, senha } = req.body;
+
+    if (!email || !senha) {
+        return res.status(400).json({
+            sucesso: false,
+            mensagem: 'Informe o email e a senha.'
+        });
+    }
+
+    const query = 'SELECT * FROM usuarios WHERE email = ?';
+
     conexao.query(query, [email], async (erro, resultado) => {
         if (erro) {
             console.log(erro);
+
             return res.status(500).json({
-                mensagem: 'Erro ao buscar usuário',
+                sucesso: false,
+                mensagem: 'Erro ao buscar usuário.'
+            });
+        }
+
+        if (resultado.length === 0) {
+            return res.status(404).json({
+                sucesso: false,
+                mensagem: 'Usuário não encontrado.'
             });
         }
 
         const usuario = resultado[0];
 
-        const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
+        try {
+            const senhaCorreta = await bcrypt.compare(
+                senha,
+                usuario.senha
+            );
 
-        if(senhaCorreta){
+            if (!senhaCorreta) {
+                return res.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Senha incorreta.'
+                });
+            }
+
             return res.json({
                 sucesso: true,
                 mensagem: 'Login bem-sucedido',
-                data: usuario
+                data: {
+                    id_usuario: usuario.id_usuario,
+                    nome: usuario.nome,
+                    email: usuario.email,
+                    tipo_usuario: usuario.tipo_usuario
+                }
+            });
+
+        } catch (erro) {
+            console.log(erro);
+
+            return res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro ao verificar a senha.'
             });
         }
     });
-}); 
-
+});
 
 app.post('/roupas', upload.array('fotos', 5), (req, res) => {
     const {

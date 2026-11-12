@@ -24,7 +24,7 @@ export default function Cadastro({ navigation }) {
     }
 
     try {
-      const resposta = await fetch("http://172.20.91.0:3000/usuarios", {
+      const resposta = await fetch("http://172.20.90.209:3000/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

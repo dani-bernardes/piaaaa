@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 import {
@@ -18,18 +19,19 @@ import * as ImagePicker from 'expo-image-picker';
 const BASE = 'http://localhost:3000';
 
 const TIPOS = { troca: 'Troca', venda: 'Venda', doacao: 'Doação' };
+
 const STATUS = {
   disponivel: 'Disponível',
   reservado: 'Reservado',
   finalizado: 'Concluída',
 };
+
 const ACAO_CONCLUIR = {
   troca: 'Marcar como trocada',
   venda: 'Marcar como vendida',
   doacao: 'Marcar como doada',
 };
 
-// Alert.alert não funciona no navegador, então usamos window.alert / confirm na web
 function aviso(titulo, mensagem) {
   if (Platform.OS === 'web') {
     window.alert(`${titulo}\n${mensagem}`);
@@ -52,6 +54,7 @@ function confirmar(titulo, mensagem, textoOk, aoConfirmar) {
 export default function Perfil({ navigation, route }) {
   const usuarioParam = route.params?.usuario;
   const id = usuarioParam?.id_usuario;
+  const tipoUsuario = usuarioParam?.tipo_usuario;
 
   const [tela, setTela] = useState('perfil');
 
@@ -68,10 +71,25 @@ export default function Perfil({ navigation, route }) {
     doacoes: 0,
     publicadas: 0,
   });
+
   const [minhasRoupas, setMinhasRoupas] = useState([]);
 
   const [senhaExcluir, setSenhaExcluir] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+
+  // Dados do estabelecimento
+  const [estabelecimento, setEstabelecimento] = useState({
+    nome: '',
+    endereco: '',
+    cidade: '',
+    telefone: '',
+    email: '',
+    site: '',
+    descricao: '',
+    horario_funcionamento: '',
+    latitude: '',
+    longitude: '',
+  });
 
   const tema = {
     fundo: darkMode ? '#121212' : '#F5F5F5',
@@ -115,6 +133,105 @@ export default function Perfil({ navigation, route }) {
     return unsubscribe;
   }, [navigation]);
 
+  // ---------- cadastro do estabelecimento ----------
+
+  function atualizarEstabelecimento(campo, valor) {
+    setEstabelecimento((anterior) => ({
+      ...anterior,
+      [campo]: valor,
+    }));
+  }
+
+  async function cadastrarEstabelecimento() {
+    const latitude = Number(
+      estabelecimento.latitude.trim().replace(',', '.')
+    );
+
+    const longitude = Number(
+      estabelecimento.longitude.trim().replace(',', '.')
+    );
+
+    if (!id) {
+      aviso('Erro', 'Não foi possível identificar o usuário logado.');
+      return;
+    }
+
+    if (tipoUsuario !== 'brecho' && tipoUsuario !== 'atelie') {
+      aviso('Atenção', 'Apenas contas de brechó e ateliê podem realizar esse cadastro.');
+      return;
+    }
+
+    if (
+      !estabelecimento.nome.trim() ||
+      !estabelecimento.latitude.trim() ||
+      !estabelecimento.longitude.trim()
+    ) {
+      aviso('Atenção', 'Preencha o nome e as coordenadas do estabelecimento.');
+      return;
+    }
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      aviso('Atenção', 'Informe coordenadas válidas.');
+      return;
+    }
+
+    try {
+      const resposta = await fetch(`${BASE}/estabelecimentos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_usuario: id,
+          tipo: tipoUsuario,
+          nome: estabelecimento.nome.trim(),
+          endereco: estabelecimento.endereco,
+          cidade: estabelecimento.cidade,
+          telefone: estabelecimento.telefone,
+          email: estabelecimento.email,
+          site: estabelecimento.site,
+          descricao: estabelecimento.descricao,
+          horario_funcionamento: estabelecimento.horario_funcionamento,
+          latitude,
+          longitude,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (resposta.ok && dados.sucesso) {
+        aviso('Sucesso', 'Seu estabelecimento foi cadastrado no mapa!');
+
+        setEstabelecimento({
+          nome: '',
+          endereco: '',
+          cidade: '',
+          telefone: '',
+          email: '',
+          site: '',
+          descricao: '',
+          horario_funcionamento: '',
+          latitude: '',
+          longitude: '',
+        });
+
+        setTela('perfil');
+      } else {
+        aviso('Erro', dados.mensagem || 'Não foi possível cadastrar o estabelecimento.');
+      }
+    } catch (erro) {
+      console.log('Erro ao cadastrar estabelecimento:', erro);
+      aviso('Erro', 'Não foi possível conectar ao servidor.');
+    }
+  }
+
   // ---------- foto de perfil ----------
 
   async function escolherFoto() {
@@ -131,7 +248,7 @@ export default function Perfil({ navigation, route }) {
       }
 
       const resultado = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // em SDK antigo: ImagePicker.MediaTypeOptions.Images
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
@@ -172,6 +289,7 @@ export default function Perfil({ navigation, route }) {
     }
   }
 
+  // ---------- editar perfil ----------
 
   async function salvarPerfil() {
     if (!novoNome.trim() || !novoEmail.trim()) {
@@ -202,6 +320,7 @@ export default function Perfil({ navigation, route }) {
     }
   }
 
+  // ---------- concluir roupa ----------
 
   async function concluirRoupa(roupa) {
     try {
@@ -224,6 +343,7 @@ export default function Perfil({ navigation, route }) {
     }
   }
 
+  // ---------- sair e excluir conta ----------
 
   function irParaInicio() {
     navigation.reset({
@@ -233,7 +353,12 @@ export default function Perfil({ navigation, route }) {
   }
 
   function sair() {
-    confirmar('Sair da conta', 'Deseja realmente sair do aplicativo?', 'Sair', irParaInicio);
+    confirmar(
+      'Sair da conta',
+      'Deseja realmente sair do aplicativo?',
+      'Sair',
+      irParaInicio
+    );
   }
 
   function excluirConta() {
@@ -275,6 +400,7 @@ export default function Perfil({ navigation, route }) {
     setTela('perfil');
   }
 
+  // ---------- avatar ----------
 
   function renderAvatar(tamanho = 90) {
     return (
@@ -298,12 +424,12 @@ export default function Perfil({ navigation, route }) {
     );
   }
 
+  // ---------- tela principal do perfil ----------
 
   if (tela === 'perfil') {
     return (
       <View style={[styles.container, { backgroundColor: tema.fundo }]}>
         <ScrollView showsVerticalScrollIndicator={false}>
-
           <View style={styles.topo}>
             <Text style={styles.topoTitulo}>Seu perfil</Text>
 
@@ -313,7 +439,6 @@ export default function Perfil({ navigation, route }) {
             <Text style={styles.email}>{email}</Text>
           </View>
 
-         
           <View style={styles.statsContainer}>
             <View style={styles.statsRoxo}>
               <Text style={styles.numero}>{resumo.trocas}</Text>
@@ -336,7 +461,6 @@ export default function Perfil({ navigation, route }) {
           </Text>
 
           <View style={styles.menu}>
-
             <TouchableOpacity
               style={[styles.opcao, { backgroundColor: tema.card }]}
               onPress={() => setTela('minhasRoupas')}
@@ -344,6 +468,18 @@ export default function Perfil({ navigation, route }) {
               <Text style={styles.textoConfig}>Minhas roupas</Text>
               <Text style={styles.iconeConfig}>☰</Text>
             </TouchableOpacity>
+
+            {(tipoUsuario === 'brecho' || tipoUsuario === 'atelie') && (
+              <TouchableOpacity
+                style={[styles.opcao, { backgroundColor: tema.card }]}
+                onPress={() => setTela('cadastrarEstabelecimento')}
+              >
+                <Text style={styles.textoConfig}>
+                  Cadastrar meu estabelecimento
+                </Text>
+                <Text style={styles.iconeConfig}>📍</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[styles.opcao, { backgroundColor: tema.card }]}
@@ -377,23 +513,181 @@ export default function Perfil({ navigation, route }) {
               style={[styles.opcao, { backgroundColor: tema.card }]}
               onPress={sair}
             >
-              <Text style={[styles.textoSair, { color: tema.texto }]}>Sair</Text>
+              <Text style={[styles.textoSair, { color: tema.texto }]}>
+                Sair
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.opcao, styles.opcaoPerigo, { backgroundColor: tema.card }]}
+              style={[
+                styles.opcao,
+                styles.opcaoPerigo,
+                { backgroundColor: tema.card },
+              ]}
               onPress={() => setTela('excluir')}
             >
               <Text style={styles.textoPerigo}>Excluir conta</Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
       </View>
     );
   }
 
+  // ---------- cadastro do estabelecimento ----------
 
+  if (tela === 'cadastrarEstabelecimento') {
+    const campos = [
+      {
+        chave: 'nome',
+        titulo: 'Nome do estabelecimento',
+        placeholder: 'Ex.: Brechó Rewear',
+      },
+      {
+        chave: 'endereco',
+        titulo: 'Endereço',
+        placeholder: 'Rua, número e bairro',
+      },
+      {
+        chave: 'cidade',
+        titulo: 'Cidade',
+        placeholder: 'Ex.: São Leopoldo',
+      },
+      {
+        chave: 'telefone',
+        titulo: 'Telefone',
+        placeholder: '(51) 99999-9999',
+      },
+      {
+        chave: 'email',
+        titulo: 'Email',
+        placeholder: 'contato@email.com',
+      },
+      {
+        chave: 'site',
+        titulo: 'Site ou rede social',
+        placeholder: 'Link do estabelecimento',
+      },
+      {
+        chave: 'horario_funcionamento',
+        titulo: 'Horário de funcionamento',
+        placeholder: 'Ex.: Segunda a sexta, das 9h às 18h',
+      },
+      {
+        chave: 'latitude',
+        titulo: 'Latitude',
+        placeholder: 'Ex.: -29.7605',
+      },
+      {
+        chave: 'longitude',
+        titulo: 'Longitude',
+        placeholder: 'Ex.: -51.1472',
+      },
+    ];
+
+    return (
+      <ScrollView
+        style={{ backgroundColor: tema.fundo }}
+        contentContainerStyle={styles.conteudo}
+      >
+        <Text style={styles.titulo}>Cadastrar estabelecimento</Text>
+
+        <View style={[styles.card, { backgroundColor: tema.card }]}>
+          <Text style={[styles.descricao, { color: tema.secundario }]}>
+            Cadastre seu brechó ou ateliê para que ele apareça no mapa
+            do Rewear-it.
+          </Text>
+
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Tipo de estabelecimento
+          </Text>
+
+          <View
+            style={[
+              styles.input,
+              {
+                borderColor: tema.borda,
+                backgroundColor: tema.fundo,
+              },
+            ]}
+          >
+            <Text style={{ color: tema.texto }}>
+              {tipoUsuario === 'brecho' ? 'Brechó' : 'Ateliê'}
+            </Text>
+          </View>
+
+          {campos.map((campo) => (
+            <View key={campo.chave}>
+              <Text style={[styles.label, { color: tema.texto }]}>
+                {campo.titulo}
+              </Text>
+
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: tema.texto,
+                    borderColor: tema.borda,
+                    backgroundColor: tema.fundo,
+                  },
+                ]}
+                value={estabelecimento[campo.chave]}
+                onChangeText={(valor) =>
+                  atualizarEstabelecimento(campo.chave, valor)
+                }
+                placeholder={campo.placeholder}
+                placeholderTextColor="#999"
+                keyboardType={
+                  campo.chave === 'latitude' ||
+                  campo.chave === 'longitude'
+                    ? 'decimal-pad'
+                    : 'default'
+                }
+                autoCapitalize="none"
+              />
+            </View>
+          ))}
+
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Descrição
+          </Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: tema.texto,
+                borderColor: tema.borda,
+                backgroundColor: tema.fundo,
+                minHeight: 90,
+                textAlignVertical: 'top',
+              },
+            ]}
+            value={estabelecimento.descricao}
+            onChangeText={(valor) =>
+              atualizarEstabelecimento('descricao', valor)
+            }
+            placeholder="Conte um pouco sobre seu estabelecimento"
+            placeholderTextColor="#999"
+            multiline
+          />
+
+          <TouchableOpacity
+            style={styles.botao}
+            onPress={cadastrarEstabelecimento}
+          >
+            <Text style={styles.botaoTexto}>Cadastrar no mapa</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.botaoVoltar} onPress={voltar}>
+          <Text style={{ color: tema.texto }}>Voltar</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  // ---------- minhas roupas ----------
 
   if (tela === 'minhasRoupas') {
     return (
@@ -412,7 +706,11 @@ export default function Perfil({ navigation, route }) {
         {minhasRoupas.map((roupa) => (
           <View
             key={roupa.id_roupa}
-            style={[styles.card, styles.linhaRoupa, { backgroundColor: tema.card }]}
+            style={[
+              styles.card,
+              styles.linhaRoupa,
+              { backgroundColor: tema.card },
+            ]}
           >
             {roupa.foto ? (
               <Image
@@ -455,6 +753,8 @@ export default function Perfil({ navigation, route }) {
     );
   }
 
+  // ---------- editar perfil ----------
+
   if (tela === 'editar') {
     return (
       <ScrollView
@@ -464,7 +764,6 @@ export default function Perfil({ navigation, route }) {
         <Text style={styles.titulo}>Editar perfil</Text>
 
         <View style={[styles.card, { backgroundColor: tema.card }]}>
-
           <TouchableOpacity style={styles.areaFoto} onPress={escolherFoto}>
             {renderAvatar(100)}
 
@@ -474,12 +773,18 @@ export default function Perfil({ navigation, route }) {
             </Text>
           </TouchableOpacity>
 
-          <Text style={[styles.label, { color: tema.texto }]}>Nome completo</Text>
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Nome completo
+          </Text>
 
           <TextInput
             style={[
               styles.input,
-              { color: tema.texto, borderColor: tema.borda, backgroundColor: tema.fundo },
+              {
+                color: tema.texto,
+                borderColor: tema.borda,
+                backgroundColor: tema.fundo,
+              },
             ]}
             value={novoNome}
             onChangeText={setNovoNome}
@@ -492,7 +797,11 @@ export default function Perfil({ navigation, route }) {
           <TextInput
             style={[
               styles.input,
-              { color: tema.texto, borderColor: tema.borda, backgroundColor: tema.fundo },
+              {
+                color: tema.texto,
+                borderColor: tema.borda,
+                backgroundColor: tema.fundo,
+              },
             ]}
             value={novoEmail}
             onChangeText={setNovoEmail}
@@ -514,6 +823,7 @@ export default function Perfil({ navigation, route }) {
     );
   }
 
+  // ---------- configurações ----------
 
   if (tela === 'configuracoes') {
     return (
@@ -523,7 +833,9 @@ export default function Perfil({ navigation, route }) {
         <View style={[styles.card, { backgroundColor: tema.card }]}>
           <View style={styles.linha}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.label, { color: tema.texto }]}>Modo escuro</Text>
+              <Text style={[styles.label, { color: tema.texto }]}>
+                Modo escuro
+              </Text>
               <Text style={{ color: tema.secundario }}>
                 Ativar tema escuro do aplicativo
               </Text>
@@ -545,7 +857,7 @@ export default function Perfil({ navigation, route }) {
     );
   }
 
-
+  // ---------- ajuda ----------
 
   if (tela === 'ajuda') {
     return (
@@ -556,13 +868,17 @@ export default function Perfil({ navigation, route }) {
         <Text style={styles.titulo}>Ajuda</Text>
 
         <View style={[styles.card, { backgroundColor: tema.card }]}>
-          <Text style={[styles.label, { color: tema.texto }]}>Precisa de ajuda?</Text>
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Precisa de ajuda?
+          </Text>
 
           <Text style={[styles.descricao, { color: tema.secundario }]}>
             Estamos aqui para ajudar você a utilizar o Rewear-it!
           </Text>
 
-          <Text style={[styles.label, { color: tema.texto }]}>Dúvidas frequentes</Text>
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Dúvidas frequentes
+          </Text>
 
           <Text style={[styles.descricao, { color: tema.secundario }]}>
             • Como realizar uma troca?
@@ -574,9 +890,13 @@ export default function Perfil({ navigation, route }) {
             • Como editar meus dados?
           </Text>
 
-          <Text style={[styles.label, { color: tema.texto }]}>Contato do suporte</Text>
+          <Text style={[styles.label, { color: tema.texto }]}>
+            Contato do suporte
+          </Text>
 
-          <Text style={{ color: '#2E7D32' }}>suporte@rewearit.com</Text>
+          <Text style={{ color: '#2E7D32' }}>
+            suporte@rewearit.com
+          </Text>
         </View>
 
         <TouchableOpacity style={styles.botaoVoltar} onPress={voltar}>
@@ -586,7 +906,7 @@ export default function Perfil({ navigation, route }) {
     );
   }
 
-
+  // ---------- excluir conta ----------
 
   if (tela === 'excluir') {
     return (
@@ -594,7 +914,9 @@ export default function Perfil({ navigation, route }) {
         style={{ backgroundColor: tema.fundo }}
         contentContainerStyle={styles.conteudo}
       >
-        <Text style={[styles.titulo, { color: '#C62828' }]}>Excluir conta</Text>
+        <Text style={[styles.titulo, { color: '#C62828' }]}>
+          Excluir conta
+        </Text>
 
         <View style={[styles.card, { backgroundColor: tema.card }]}>
           <Text style={[styles.descricao, { color: tema.secundario }]}>
@@ -609,7 +931,11 @@ export default function Perfil({ navigation, route }) {
           <TextInput
             style={[
               styles.input,
-              { color: tema.texto, borderColor: tema.borda, backgroundColor: tema.fundo },
+              {
+                color: tema.texto,
+                borderColor: tema.borda,
+                backgroundColor: tema.fundo,
+              },
             ]}
             value={senhaExcluir}
             onChangeText={setSenhaExcluir}
@@ -618,7 +944,10 @@ export default function Perfil({ navigation, route }) {
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.botaoExcluir} onPress={excluirConta}>
+          <TouchableOpacity
+            style={styles.botaoExcluir}
+            onPress={excluirConta}
+          >
             <Text style={styles.botaoTexto}>Excluir minha conta</Text>
           </TouchableOpacity>
         </View>
@@ -634,7 +963,6 @@ export default function Perfil({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
   },
@@ -920,5 +1248,4 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     marginBottom: 22,
   },
-
 });

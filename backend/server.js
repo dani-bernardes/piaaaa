@@ -365,7 +365,6 @@ app.get('/usuarios/:id/resumo', async (req, res) => {
     }
 });
 
-// roupas publicadas pelo usuário
 app.get('/usuarios/:id/roupas', async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -383,7 +382,6 @@ app.get('/usuarios/:id/roupas', async (req, res) => {
     }
 });
 
-// marcar roupa como concluída (trocada / vendida / doada)
 app.patch('/roupas/:id/status', async (req, res) => {
     const { id_usuario, status } = req.body;
 
@@ -408,7 +406,7 @@ app.patch('/roupas/:id/status', async (req, res) => {
     }
 });
 
-// excluir conta (pede a senha e apaga tudo do usuário)
+
 app.delete('/usuarios/:id', async (req, res) => {
     const id = req.params.id;
     const { senha } = req.body;
@@ -435,7 +433,6 @@ app.delete('/usuarios/:id', async (req, res) => {
             return res.status(401).json({ mensagem: 'Senha incorreta.' });
         }
 
-        // arquivos que serão apagados do disco depois
         const [fotosCapa] = await db.query(
             'SELECT foto FROM Roupas WHERE id_usuario = ?', [id]
         );
@@ -472,13 +469,13 @@ app.delete('/usuarios/:id', async (req, res) => {
             [id]
         );
         await db.query('DELETE FROM Dicas WHERE id_usuario = ?', [id]);
-        await db.query('DELETE FROM Roupas WHERE id_usuario = ?', [id]); // Fotos_Roupas apaga junto (CASCADE)
+        await db.query('DELETE FROM Roupas WHERE id_usuario = ?', [id]); 
         await db.query('DELETE FROM Usuarios WHERE id_usuario = ?', [id]);
 
         await db.commit();
         transacaoAberta = false;
 
-        // limpa as imagens do disco
+        
         apagarArquivo(usuarios[0].foto_perfil);
         fotosCapa.forEach((f) => apagarArquivo(f.foto));
         fotosExtras.forEach((f) => apagarArquivo(f.caminho_foto));
@@ -547,7 +544,7 @@ async function buscarConversa(idConversa, idUsuario) {
     return rows[0] || null;
 }
 
-// ---------- abrir (ou continuar) uma conversa sobre uma roupa ----------
+
 app.post('/conversas', async (req, res) => {
     const { id_roupa, id_usuario } = req.body;
 
@@ -793,7 +790,6 @@ app.post('/carrinho/finalizar', async (req, res) => {
         let indisponiveis = 0;
 
         for (const item of itens) {
-            // só reserva se ainda estiver disponível (evita dois compradores na mesma peça)
             const [atualizacao] = await db.query(
                 "UPDATE Roupas SET status = 'reservado' WHERE id_roupa = ? AND status = 'disponivel'",
                 [item.id_roupa]
@@ -806,7 +802,6 @@ app.post('/carrinho/finalizar', async (req, res) => {
 
             reservadas++;
 
-            // abre a conversa com o vendedor e manda o aviso
             await db.query(
                 `INSERT IGNORE INTO Conversas
                  (id_roupa, id_usuario_interessado, id_usuario_dono)
@@ -900,6 +895,310 @@ app.get('/usuarios/:id/favoritos', async (req, res) => {
     }
 });
 
+
+app.put('/roupas/:id', async (req, res) => {
+    const {
+        id_usuario, titulo, descricao, categoria, tamanho,
+        cor, material, condicao, preco, tipo_oferta
+    } = req.body;
+
+    if (!id_usuario || !titulo || !titulo.trim() || !categoria) {
+        return res.status(400).json({ mensagem: 'Preencha título e categoria.' });
+    }
+
+    if (!['troca', 'venda', 'doacao'].includes(tipo_oferta)) {
+        return res.status(400).json({ mensagem: 'Tipo de oferta inválido.' });
+    }
+
+    if (condicao && !['novo', 'pouco usado', 'usado'].includes(condicao)) {
+        return res.status(400).json({ mensagem: 'Condição inválida.' });
+    }
+
+    if (
+        tipo_oferta === 'venda' &&
+        (preco === undefined || preco === null || preco === '' || isNaN(Number(preco)))
+    ) {
+        return res.status(400).json({ mensagem: 'Informe um preço válido para venda.' });
+    }
+
+    try {
+        const [rows] = await db.query(
+            'SELECT id_usuario, status FROM Roupas WHERE id_roupa = ?',
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ mensagem: 'Anúncio não encontrado.' });
+        }
+
+        if (Number(rows[0].id_usuario) !== Number(id_usuario)) {
+            return res.status(403).json({ mensagem: 'Você só pode editar os seus anúncios.' });
+        }
+
+        if (rows[0].status === 'finalizado') {
+            return res.status(400).json({ mensagem: 'Anúncio concluído não pode ser editado.' });
+        }
+
+        await db.query(
+            `UPDATE Roupas
+             SET titulo = ?, descricao = ?, categoria = ?, tamanho = ?, cor = ?,
+                 material = ?, condicao = ?, preco = ?, tipo_oferta = ?
+             WHERE id_roupa = ?`,
+            [
+                titulo.trim(),
+                descricao || null,
+                categoria,
+                tamanho || null,
+                cor || null,
+                material || null,
+                condicao || null,
+                tipo_oferta === 'venda' ? Number(preco) : null,
+                tipo_oferta,
+                req.params.id
+            ]
+        );
+
+        if (tipo_oferta !== 'venda') {
+            await db.query('DELETE FROM Carrinho WHERE id_roupa = ?', [req.params.id]);
+        }
+
+        res.json({ sucesso: true, mensagem: 'Anúncio atualizado!' });
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ mensagem: 'Erro ao atualizar o anúncio.' });
+    }
+});
+
+app.delete('/roupas/:id', async (req, res) => {
+    const { id_usuario } = req.body;
+    const id = req.params.id;
+
+    if (!id_usuario) {
+        return res.status(400).json({ mensagem: 'Usuário não informado.' });
+    }
+
+    try {
+        const [rows] = await db.query(
+            'SELECT id_usuario, foto FROM Roupas WHERE id_roupa = ?',
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ mensagem: 'Anúncio não encontrado.' });
+        }
+
+        if (Number(rows[0].id_usuario) !== Number(id_usuario)) {
+            return res.status(403).json({ mensagem: 'Você só pode excluir os seus anúncios.' });
+        }
+
+        const [fotosExtras] = await db.query(
+            'SELECT caminho_foto FROM Fotos_Roupas WHERE id_roupa = ?',
+            [id]
+        );
+
+        await db.query('DELETE FROM Avaliacoes WHERE id_roupa = ?', [id]);
+        await db.query('DELETE FROM Trocas WHERE id_roupa = ?', [id]);
+        await db.query('DELETE FROM Transacoes WHERE id_roupa = ?', [id]);
+        await db.query('DELETE FROM Roupas_Tags WHERE id_roupa = ?', [id]);
+
+        await db.query('DELETE FROM Roupas WHERE id_roupa = ?', [id]);
+
+        apagarArquivo(rows[0].foto);
+        fotosExtras.forEach((f) => apagarArquivo(f.caminho_foto));
+
+        res.json({ sucesso: true, mensagem: 'Anúncio excluído.' });
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ mensagem: 'Erro ao excluir o anúncio.' });
+    }
+});
+
+
+
+app.post('/estabelecimentos', async (req, res) => {
+    const {
+        id_usuario,
+        nome,
+        tipo,
+        endereco,
+        cidade,
+        telefone,
+        email,
+        site,
+        descricao,
+        horario_funcionamento,
+        latitude,
+        longitude
+    } = req.body;
+
+    if (
+        !id_usuario ||
+        !nome ||
+        !tipo ||
+        !latitude ||
+        !longitude
+    ) {
+        return res.status(400).json({
+            mensagem: 'Preencha os campos obrigatórios.'
+        });
+    }
+
+    if (!['brecho', 'atelie'].includes(tipo)) {
+        return res.status(400).json({
+            mensagem: 'Tipo de estabelecimento inválido.'
+        });
+    }
+
+    if (
+        !Number.isFinite(Number(latitude)) ||
+        !Number.isFinite(Number(longitude)) ||
+        Number(latitude) < -90 ||
+        Number(latitude) > 90 ||
+        Number(longitude) < -180 ||
+        Number(longitude) > 180
+    ) {
+        return res.status(400).json({
+            mensagem: 'Coordenadas inválidas.'
+        });
+    }
+
+    try {
+        const [usuarios] = await db.query(
+            'SELECT tipo_usuario FROM Usuarios WHERE id_usuario = ?',
+            [id_usuario]
+        );
+
+        if (usuarios.length === 0) {
+            return res.status(404).json({
+                mensagem: 'Usuário não encontrado.'
+            });
+        }
+
+        if (usuarios[0].tipo_usuario !== tipo) {
+            return res.status(403).json({
+                mensagem: 'Sua conta não pode cadastrar este tipo de estabelecimento.'
+            });
+        }
+
+        const [existente] = await db.query(
+            'SELECT id_estabelecimento FROM Estabelecimentos WHERE id_usuario = ?',
+            [id_usuario]
+        );
+
+        if (existente.length > 0) {
+            return res.status(409).json({
+                mensagem: 'Esta conta já possui um estabelecimento cadastrado.'
+            });
+        }
+
+        const sql = `
+            INSERT INTO Estabelecimentos (
+                id_usuario,
+                nome,
+                tipo,
+                endereco,
+                cidade,
+                telefone,
+                email,
+                site,
+                descricao,
+                horario_funcionamento,
+                latitude,
+                longitude
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const [resultado] = await db.query(sql, [
+            id_usuario,
+            nome,
+            tipo,
+            endereco || null,
+            cidade || null,
+            telefone || null,
+            email || null,
+            site || null,
+            descricao || null,
+            horario_funcionamento || null,
+            Number(latitude),
+            Number(longitude)
+        ]);
+
+        res.status(201).json({
+            sucesso: true,
+            mensagem: 'Estabelecimento cadastrado no mapa!',
+            id_estabelecimento: resultado.insertId
+        });
+
+    } catch (e) {
+        console.log(e);
+
+        res.status(500).json({
+            mensagem: 'Erro ao cadastrar estabelecimento.'
+        });
+    }
+});
+
+
+app.get('/estabelecimentos', async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                id_estabelecimento,
+                id_usuario,
+                nome,
+                tipo,
+                endereco,
+                cidade,
+                telefone,
+                email,
+                site,
+                descricao,
+                horario_funcionamento,
+                foto_logo,
+                latitude,
+                longitude
+            FROM Estabelecimentos
+            WHERE latitude IS NOT NULL
+            AND longitude IS NOT NULL
+        `);
+
+        res.json(rows);
+
+    } catch (e) {
+        console.log(e);
+
+        res.status(500).json({
+            mensagem: 'Erro ao buscar estabelecimentos.'
+        });
+    }
+});
+
+
+app.get('/usuarios/:id/estabelecimento', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT * FROM Estabelecimentos
+             WHERE id_usuario = ?`,
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                mensagem: 'Nenhum estabelecimento cadastrado.'
+            });
+        }
+
+        res.json(rows[0]);
+
+    } catch (e) {
+        console.log(e);
+
+        res.status(500).json({
+            mensagem: 'Erro ao buscar estabelecimento.'
+        });
+    }
+});
 
 
 

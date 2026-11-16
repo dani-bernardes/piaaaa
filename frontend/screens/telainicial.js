@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   View,
@@ -7,63 +8,76 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-export default function HomeScreen({ navigation })  {
+
+export default function HomeScreen({ navigation }) {
   return (
     <ScrollView
-    style={{flex:1}}
-    contentContainerStyle={{flexGrow:1, padding: 16}}
-    showsVerticalScrollIndicator={true}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1, padding: 16 }}
+      showsVerticalScrollIndicator={true}
     >
-    <View style={styles.container}>
-      <Image
-        source={require("../assets/logob.jpeg")}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <View style={styles.container}>
+        <Image
+          source={require("../assets/logob.jpeg")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-      <View style={styles.card}>
-        <View style={styles.icon} />
-        <View>
-          <Text style={styles.titulo}>Troque</Text>
-          <Text style={styles.descricao}>
-            Dê nova vida às suas roupas
-          </Text>
+        <View style={styles.card}>
+          <View style={styles.icon}>
+            <Text style={styles.emoji}>♻️</Text>
+          </View>
+          <View>
+            <Text style={styles.titulo}>Troque</Text>
+            <Text style={styles.descricao}>
+              Dê nova vida às suas roupas
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <View style={styles.icon} />
-        <View>
-          <Text style={styles.titulo}>Venda</Text>
-          <Text style={styles.descricao}>
-            Venda de forma consciente
-          </Text>
+        <View style={styles.card}>
+          <View style={styles.icon}>
+            <Text style={styles.emoji}>🛍️</Text>
+          </View>
+          <View>
+            <Text style={styles.titulo}>Venda</Text>
+            <Text style={styles.descricao}>
+              Venda de forma consciente
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <View style={styles.icon} />
-        <View>
-          <Text style={styles.titulo}>Doe</Text>
-          <Text style={styles.descricao}>
-            Faça a diferença doando
-          </Text>
+        <View style={styles.card}>
+          <View style={styles.icon}>
+            <Text style={styles.emoji}>💚</Text>
+          </View>
+          <View>
+            <Text style={styles.titulo}>Doe</Text>
+            <Text style={styles.descricao}>
+              Faça a diferença doando
+            </Text>
+          </View>
         </View>
-      </View>
-  <TouchableOpacity
-  style={styles.botaoRoxo}
-  onPress={() => navigation.navigate('Cadastro')}
->
-  <Text style={styles.textoBotaoRoxo}>Começar agora</Text>
-</TouchableOpacity>
 
-<TouchableOpacity
-  style={styles.botaoBranco}
-  onPress={() => navigation.navigate('login')}
->
-  <Text style={styles.textoBotaoBranco}>Já tenho uma conta</Text>
-</TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.botaoRoxo}
+          onPress={() => navigation.navigate('Cadastro')}
+        >
+          <Text style={styles.textoBotaoRoxo}>
+           Começar agora
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.botaoBranco}
+          onPress={() => navigation.navigate('login')}
+        >
+          <Text style={styles.textoBotaoBranco}>
+             Já tenho uma conta
+          </Text>
+        </TouchableOpacity>
+
+      </View>
     </ScrollView>
   );
 }
@@ -103,6 +117,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#DDD",
     borderRadius: 25,
     marginRight: 15,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  emoji: {
+    fontSize: 25,
   },
 
   titulo: {

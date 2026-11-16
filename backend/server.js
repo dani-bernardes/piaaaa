@@ -842,6 +842,64 @@ app.post('/carrinho/finalizar', async (req, res) => {
     }
 });
 
+ 
+app.post('/favoritos/alternar', async (req, res) => {
+    const { id_usuario, id_roupa } = req.body;
+
+    if (!id_usuario || !id_roupa) {
+        return res.status(400).json({ mensagem: 'Dados incompletos.' });
+    }
+
+    try {
+        const [removido] = await db.query(
+            'DELETE FROM Favoritos WHERE id_usuario = ? AND id_roupa = ?',
+            [id_usuario, id_roupa]
+        );
+
+        if (removido.affectedRows > 0) {
+            return res.json({ sucesso: true, favoritado: false });
+        }
+
+        // senão, adiciona (se a peça existir)
+        const [roupas] = await db.query(
+            'SELECT id_roupa FROM Roupas WHERE id_roupa = ?',
+            [id_roupa]
+        );
+
+        if (roupas.length === 0) {
+            return res.status(404).json({ mensagem: 'Peça não encontrada.' });
+        }
+
+        await db.query(
+            'INSERT IGNORE INTO Favoritos (id_usuario, id_roupa) VALUES (?, ?)',
+            [id_usuario, id_roupa]
+        );
+
+        res.json({ sucesso: true, favoritado: true });
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ mensagem: 'Erro ao atualizar favoritos.' });
+    }
+});
+
+app.get('/usuarios/:id/favoritos', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT r.id_roupa, r.titulo, r.preco, r.tipo_oferta, r.foto, r.status
+             FROM Favoritos f
+             JOIN Roupas r ON r.id_roupa = f.id_roupa
+             WHERE f.id_usuario = ?
+             ORDER BY f.data_favorito DESC`,
+            [req.params.id]
+        );
+
+        res.json(rows);
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ mensagem: 'Erro ao buscar favoritos.' });
+    }
+});
+
 
 
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   View,
@@ -8,7 +7,17 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Platform,
 } from "react-native";
+
+// Alert.alert não aparece no navegador, então usamos window.alert na web
+function aviso(titulo, mensagem) {
+  if (Platform.OS === "web") {
+    window.alert(`${titulo}\n${mensagem}`);
+  } else {
+    Alert.alert(titulo, mensagem);
+  }
+}
 
 export default function Cadastro({ navigation }) {
   const [nome, setNome] = useState("");
@@ -19,12 +28,12 @@ export default function Cadastro({ navigation }) {
 
   async function cadastrarUsuario() {
     if (!nome || !email || !senha || !tipo_usuario) {
-      Alert.alert("Atenção", "Preencha todos os campos.");
+      aviso("Atenção", "Preencha todos os campos.");
       return;
     }
 
     try {
-      const resposta = await fetch("http://172.20.90.209:3000/usuarios", {
+      const resposta = await fetch("http://localhost:3000/usuarios", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,7 +48,7 @@ export default function Cadastro({ navigation }) {
 
       const dados = await resposta.json();
 
-      Alert.alert(
+      aviso(
         resposta.ok ? "Sucesso" : "Erro",
         dados.mensagem || "Não foi possível realizar o cadastro."
       );
@@ -50,10 +59,14 @@ export default function Cadastro({ navigation }) {
         setSenha("");
         setTipoUsuario("");
         setMostrarOpcoes(false);
+
+        // depois de cadastrar, vai para o login
+        navigation.navigate("login");
       }
 
     } catch (erro) {
-      Alert.alert("Erro", "Não foi possível conectar ao servidor.");
+      console.log(erro);
+      aviso("Erro", "Não foi possível conectar ao servidor.");
     }
   }
 
@@ -140,7 +153,7 @@ export default function Cadastro({ navigation }) {
         <Text style={styles.textoBotao}>Criar conta</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
+      <TouchableOpacity onPress={() => navigation.navigate("login")}>
         <Text style={styles.link}>
           Já possui uma conta?{" "}
           <Text style={styles.linkVerde}>Entre</Text>

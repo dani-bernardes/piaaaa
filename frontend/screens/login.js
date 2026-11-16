@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 
 import {
@@ -7,16 +6,31 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Alert
+    Alert,
+    Platform
 } from 'react-native';
+
+// Alert.alert não aparece no navegador, então usamos window.alert na web
+function aviso(titulo, mensagem) {
+    if (Platform.OS === 'web') {
+        window.alert(`${titulo}\n${mensagem}`);
+    } else {
+        Alert.alert(titulo, mensagem);
+    }
+}
 
 export default function Login({ navigation }) {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
 
     async function fazerLogin() {
+        if (!email || !senha) {
+            aviso('Atenção', 'Informe email e senha.');
+            return;
+        }
+
         try {
-            const resposta = await fetch('http://172.20.90.209:3000/login', {
+            const resposta = await fetch('http://localhost:3000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -32,18 +46,16 @@ export default function Login({ navigation }) {
             console.log(dados);
 
             if (dados.sucesso) {
-                Alert.alert('Sucesso', 'Login realizado com sucesso');
-
                 navigation.navigate('Home', {
                     usuario: dados.data
                 });
             } else {
-                Alert.alert('Erro', dados.mensagem || 'Email ou senha incorretos');
+                aviso('Erro', dados.mensagem || 'Email ou senha incorretos');
             }
 
         } catch (error) {
-            Alert.alert('Erro', 'Falha ao fazer login');
             console.log(error);
+            aviso('Erro', 'Não foi possível conectar ao servidor.');
         }
     }
 
@@ -59,6 +71,8 @@ export default function Login({ navigation }) {
             <TextInput
                 style={styles.input}
                 placeholder="Email"
+                keyboardType="email-address"
+                autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
             />
@@ -69,6 +83,7 @@ export default function Login({ navigation }) {
                 secureTextEntry
                 value={senha}
                 onChangeText={setSenha}
+                onSubmitEditing={fazerLogin}
             />
 
             <TouchableOpacity

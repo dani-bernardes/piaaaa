@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   View,
@@ -8,6 +7,25 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
+
+// As imagens precisam existir na pasta assets, com exatamente estes nomes.
+const OPCOES = [
+  {
+    titulo: "Troque",
+    descricao: "Dê nova vida às suas roupas",
+    imagem: require("../assets/recitela.jpg"),
+  },
+  {
+    titulo: "Venda",
+    descricao: "Venda de forma consciente",
+    imagem: require("../assets/troque.jpg"),
+  },
+  {
+    titulo: "Doe",
+    descricao: "Faça a diferença doando",
+    imagem: require("../assets/doe.jpg"),
+  },
+];
 
 export default function HomeScreen({ navigation }) {
   return (
@@ -23,60 +41,33 @@ export default function HomeScreen({ navigation }) {
           resizeMode="contain"
         />
 
-        <View style={styles.card}>
-          <View style={styles.icon}>
-            <Text style={styles.emoji}>♻️</Text>
+        {OPCOES.map((opcao) => (
+          <View key={opcao.titulo} style={styles.card}>
+            <Image
+              source={opcao.imagem}
+              style={styles.icon}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.titulo}>{opcao.titulo}</Text>
+              <Text style={styles.descricao}>{opcao.descricao}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.titulo}>Troque</Text>
-            <Text style={styles.descricao}>
-              Dê nova vida às suas roupas
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.icon}>
-            <Text style={styles.emoji}>🛍️</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Venda</Text>
-            <Text style={styles.descricao}>
-              Venda de forma consciente
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.icon}>
-            <Text style={styles.emoji}>💚</Text>
-          </View>
-          <View>
-            <Text style={styles.titulo}>Doe</Text>
-            <Text style={styles.descricao}>
-              Faça a diferença doando
-            </Text>
-          </View>
-        </View>
+        ))}
 
         <TouchableOpacity
           style={styles.botaoRoxo}
-          onPress={() => navigation.navigate('Cadastro')}
+          onPress={() => navigation.navigate("Cadastro")}
         >
-          <Text style={styles.textoBotaoRoxo}>
-           Começar agora
-          </Text>
+          <Text style={styles.textoBotaoRoxo}>Começar agora</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.botaoBranco}
-          onPress={() => navigation.navigate('login')}
+          onPress={() => navigation.navigate("login")}
         >
-          <Text style={styles.textoBotaoBranco}>
-             Já tenho uma conta
-          </Text>
+          <Text style={styles.textoBotaoBranco}>Já tenho uma conta</Text>
         </TouchableOpacity>
-
       </View>
     </ScrollView>
   );
@@ -112,17 +103,11 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-    width: 50,
-    height: 50,
-    backgroundColor: "#DDD",
-    borderRadius: 25,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     marginRight: 15,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  emoji: {
-    fontSize: 25,
+    backgroundColor: "#EEE",
   },
 
   titulo: {

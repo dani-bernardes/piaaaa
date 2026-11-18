@@ -19,7 +19,6 @@ const TAMANHOS = ["PP", "P", "M", "G", "GG", "Único"];
 
 const FILTROS_VAZIOS = { categoria: "", tamanho: "", cor: "", min: "", max: "" };
 
-// tira acentos e deixa minúsculo (assim "calca" encontra "Calça")
 function normalizar(texto) {
   return (texto || "")
     .toString()
@@ -41,7 +40,6 @@ function Chip({ label, ativo, onPress }) {
   );
 }
 
-// Card de cada roupa (fica fora do componente para não recriar a cada digitação)
 function Card({ item, favorito, onPress, onFavoritar }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -83,9 +81,10 @@ export default function Home({ navigation, route }) {
 
   const [pesquisa, setPesquisa] = useState("");
   const [roupasBanco, setRoupasBanco] = useState([]);
-  const [favoritos, setFavoritos] = useState([]); 
+  const [favoritos, setFavoritos] = useState([]);
+  const [fotoPerfil, setFotoPerfil] = useState(usuario?.foto_perfil || null);
 
-  const [tipoFiltro, setTipoFiltro] = useState(""); 
+  const [tipoFiltro, setTipoFiltro] = useState("");
   const [filtros, setFiltros] = useState(FILTROS_VAZIOS);
   const [modalAberto, setModalAberto] = useState(false);
 
@@ -148,9 +147,27 @@ export default function Home({ navigation, route }) {
     }
   }
 
+  async function carregarPerfil() {
+    if (!usuario?.id_usuario) return;
+
+    try {
+      const resposta = await fetch(
+        `http://localhost:3000/usuarios/${usuario.id_usuario}`
+      );
+      const dados = await resposta.json();
+
+      if (dados && dados.id_usuario) {
+        setFotoPerfil(dados.foto_perfil || null);
+      }
+    } catch (erro) {
+      console.log("Erro ao carregar perfil:", erro);
+    }
+  }
+
   function carregarTudo() {
     carregarRoupas();
     carregarFavoritos();
+    carregarPerfil();
   }
 
   useEffect(() => {
@@ -160,9 +177,8 @@ export default function Home({ navigation, route }) {
     return unsubscribe;
   }, [navigation]);
 
-  // favoritar / desfavoritar (atualiza na hora e confirma no servidor)
   async function alternarFavorito(item) {
-    if (!item.id_roupa || !usuario?.id_usuario) return; // peças de exemplo não favoritam
+    if (!item.id_roupa || !usuario?.id_usuario) return;
 
     const jaEra = favoritos.includes(item.id_roupa);
 
@@ -186,7 +202,6 @@ export default function Home({ navigation, route }) {
     } catch (erro) {
       console.log(erro);
 
-      // se deu erro, desfaz
       setFavoritos((anterior) =>
         jaEra
           ? [...anterior, item.id_roupa]
@@ -254,10 +269,7 @@ export default function Home({ navigation, route }) {
 
   const roupas = [...roupasBanco, ...roupasFixas];
 
-  // ---------- pesquisa e filtros ----------
-
   function passaFiltros(item) {
-    // pesquisa por nome, categoria, descrição, cor ou material
     const termo = normalizar(pesquisa.trim());
 
     if (termo) {
@@ -268,7 +280,6 @@ export default function Home({ navigation, route }) {
       if (!alvo.includes(termo)) return false;
     }
 
-    // modalidade (botões Troca / Venda / Doação)
     if (tipoFiltro && item.tipoOferta !== tipoFiltro) return false;
 
     if (filtros.categoria && item.categoria !== filtros.categoria) return false;
@@ -278,7 +289,6 @@ export default function Home({ navigation, route }) {
       return false;
     }
 
-    // preço (só peças à venda têm preço)
     const min = parseFloat(filtros.min.replace(",", "."));
     const max = parseFloat(filtros.max.replace(",", "."));
 
@@ -305,7 +315,6 @@ export default function Home({ navigation, route }) {
     setTipoFiltro("");
   }
 
-  // abre a tela de detalhes da roupa
   function abrirDetalhes(item) {
     if (item.id_roupa) {
       navigation.navigate("DetalhesRoupa", {
@@ -313,7 +322,6 @@ export default function Home({ navigation, route }) {
         id_roupa: item.id_roupa,
       });
     } else {
-      // peça de exemplo (não está no banco)
       navigation.navigate("DetalhesRoupa", { usuario, demo: item });
     }
   }
@@ -321,7 +329,6 @@ export default function Home({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* CABEÇALHO */}
       <View style={styles.header}>
         <View style={{ flex: 1, marginRight: 10 }}>
           <Text style={styles.ola} numberOfLines={1}>
@@ -334,7 +341,6 @@ export default function Home({ navigation, route }) {
         </View>
 
         <View style={styles.headerDireita}>
-          {/* FAVORITOS */}
           <TouchableOpacity
             style={styles.botaoHeader}
             onPress={() => navigation.navigate("Favoritos", { usuario })}
@@ -342,7 +348,6 @@ export default function Home({ navigation, route }) {
             <Ionicons name="heart-outline" size={24} color="#FFF" />
           </TouchableOpacity>
 
-          {/* CONVERSAS */}
           <TouchableOpacity
             style={styles.botaoHeader}
             onPress={() => navigation.navigate("Conversas", { usuario })}
@@ -350,19 +355,21 @@ export default function Home({ navigation, route }) {
             <Ionicons name="chatbubbles-outline" size={24} color="#FFF" />
           </TouchableOpacity>
 
-          {/* PERFIL */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Perfil", { usuario })}
           >
             <Image
-              source={require("../assets/perfil.jpg")}
+              source={
+                fotoPerfil
+                  ? { uri: `http://localhost:3000/uploads/${fotoPerfil}` }
+                  : require("../assets/perfil.jpg")
+              }
               style={styles.perfil}
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* PESQUISA */}
       <View style={styles.search}>
         <Ionicons
           name="search"
@@ -392,7 +399,6 @@ export default function Home({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* BOTÕES DE MODALIDADE (funcionam como filtro) */}
       <View style={styles.botoes}>
         <TouchableOpacity
           style={[
@@ -431,7 +437,6 @@ export default function Home({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* LISTA DE ROUPAS */}
       <View style={styles.tituloLista}>
         <Text style={styles.disponiveis}>Disponíveis</Text>
 
@@ -461,10 +466,7 @@ export default function Home({ navigation, route }) {
         }
       />
 
-      {/* MENU INFERIOR */}
       <View style={styles.bottomBar}>
-
-        {/* HOME */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Home", { usuario })}
@@ -472,7 +474,6 @@ export default function Home({ navigation, route }) {
           <Ionicons name="home" size={25} color="#6C4AB6" />
         </TouchableOpacity>
 
-        {/* MAPA */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Mapa", { usuario })}
@@ -480,7 +481,6 @@ export default function Home({ navigation, route }) {
           <Ionicons name="map-outline" size={25} color="#555" />
         </TouchableOpacity>
 
-        {/* UPCYCLING */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Upcycling", { usuario })}
@@ -488,7 +488,6 @@ export default function Home({ navigation, route }) {
           <Ionicons name="leaf-outline" size={25} color="#555" />
         </TouchableOpacity>
 
-        {/* ADICIONAR ROUPA */}
         <TouchableOpacity
           style={styles.botaoAdicionar}
           onPress={() => navigation.navigate("AdicionarRoupas", { usuario })}
@@ -496,7 +495,6 @@ export default function Home({ navigation, route }) {
           <Ionicons name="add" size={32} color="#FFF" />
         </TouchableOpacity>
 
-        {/* CARRINHO */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Carrinho", { usuario })}
@@ -504,17 +502,14 @@ export default function Home({ navigation, route }) {
           <Ionicons name="cart-outline" size={25} color="#555" />
         </TouchableOpacity>
 
-        {/* PERFIL */}
         <TouchableOpacity
           style={styles.menuItem}
           onPress={() => navigation.navigate("Perfil", { usuario })}
         >
           <Ionicons name="person-outline" size={25} color="#555" />
         </TouchableOpacity>
-
       </View>
 
-      {/* FILTROS AVANÇADOS */}
       <Modal
         visible={modalAberto}
         transparent
@@ -856,8 +851,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 4,
   },
-
-  // ----- modal de filtros -----
 
   modalFundo: {
     flex: 1,
